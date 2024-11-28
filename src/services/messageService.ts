@@ -31,9 +31,8 @@ const sendBirthdayMessage = async (
       await prisma.failedMessage.create({
         data: {
           userId: user.id,
-          message,
-          retries,
-          error,
+          messageType: 'birthday',
+          errorMsg: JSON.stringify(error),
           createdAt: new Date(),
         },
       });
