@@ -7,12 +7,13 @@ export const getUsers = async (_req: Request, res: Response) => {
 };
 
 export const createUser = async (req: Request, res: Response) => {
-  const { firstName, lastName, birthday, location } = req.body;
+  const { firstName, lastName, birthday, location, email } = req.body;
   const data = {
     firstName,
     lastName,
     birthday: new Date(birthday),
     location,
+    email
   };
   try {
     const user = await userService.createUser(data);
@@ -25,13 +26,14 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { firstName, lastName, birthday, location } = req.body;
+  const { firstName, lastName, birthday, location, email } = req.body;
 
   const data = {
     firstName,
     lastName,
     birthday: new Date(birthday),
     location,
+    email,
   };
   try {
     const updatedUser = await userService.updateUser(Number(id), data);
