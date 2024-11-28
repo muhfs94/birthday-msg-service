@@ -1,7 +1,8 @@
 export interface User {
-  id: string;
+  id?: number;
   firstName: string;
   lastName: string;
-  birthday: string;
-  timeZone: string;
+  birthday: Date;
+  location: string;
+  createdAt?: Date;
 }
