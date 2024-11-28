@@ -35,7 +35,6 @@ export const updateUser = async (req: Request, res: Response) => {
   };
   try {
     const updatedUser = await userService.updateUser(Number(id), data);
-    console.log({ updatedUser });
     res.status(200).json(updatedUser);
   } catch (error) {
     console.error(error);
