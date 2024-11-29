@@ -17,4 +17,17 @@ model User {
   lastBirthdaySent DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+  
+  retryJob           RetryJob[]
+
+}
+
+model RetryJob {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  retryCount    Int
+  status        String    @db.VarChar(50) // 'pending', 'success', 'failed'
+  lastAttempt   DateTime  @default(now())
+  message       String
+  user          User      @relation(fields: [userId], references: [id])
 }
