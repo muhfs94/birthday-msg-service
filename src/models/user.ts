@@ -5,5 +5,9 @@ export interface User {
   email: string;
   birthday: Date;
   location: string;
+  lastBirthdaySent?: Date;
   createdAt?: Date;
+  updatedAt?: Date;
 }
+
+

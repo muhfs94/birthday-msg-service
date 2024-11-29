@@ -2,7 +2,8 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import userRoutes from './routes/userRoutes';
-import { scheduleBirthdayMessages } from './utils/schedule';
+import { initializeDailyScheduler } from './cron/dailyScheduler';
+import { retryPendingJobs } from './services/retryJobs';
 
 dotenv.config();
 
@@ -22,12 +23,10 @@ const createApp = () => {
 
 const startServer = (app: express.Application) => {
   const port = process.env.PORT || 3000;
-
   app.listen(port, () => {
     console.log(`listening on port http://localhost:${port}`);
-
-    // Run the scheduler after the server is up
-    scheduleBirthdayMessages();
+    initializeDailyScheduler();
+    retryPendingJobs();
   });
 };
 

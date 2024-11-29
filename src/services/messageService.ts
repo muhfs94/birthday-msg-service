@@ -1,48 +1,71 @@
 import axios from 'axios';
+import axiosRetry, { AxiosRetry } from 'axios-retry';
+import { prisma } from '../utils/prismaClient';
 import { User } from '@prisma/client';
-import { prisma } from '../database';
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 5000;
+const FIVE_SECONDS = 5_000;
 
-const sendBirthdayMessage = async (
-  user: User,
-  message: string,
-  retries = 0
-) => {
+axiosRetry(axios, {
+  retries: 3,
+  retryDelay: (retryCount) => retryCount * FIVE_SECONDS,
+});
+
+const MESSAGE_API_ENDPOINT =
+  'https://email-service.digitalenvision.com.au/send-email';
+
+export const sendMessage = async (user: User, message: string) => {
+  const payload = {
+    email: user.email,
+    message,
+  };
+
   try {
-    await axios.post('https://email-service.digitalenvision.com.au', {
-      to: user.email,
-      subject: 'Happy Birthday!',
-      body: message,
-    });
-    console.log(
-      `Birthday message sent to ${user.firstName} ${user.lastName} (${user.email})`
-    );
+    await axios.post(MESSAGE_API_ENDPOINT, payload);
   } catch (error) {
-    if (retries < MAX_RETRIES) {
-      console.log(
-        `Retrying to send birthday message to ${user.firstName} ${user.lastName}... Attempt ${retries + 1}`
-      );
-      setTimeout(() => {
-        sendBirthdayMessage(user, message, retries + 1);
-      }, RETRY_DELAY);
-    } else {
-      await prisma.failedMessage.create({
-        data: {
-          userId: user.id,
-          messageType: 'birthday',
-          errorMsg: JSON.stringify(error),
-          createdAt: new Date(),
-        },
-      });
-      console.error(
-        `Failed to send birthday message to ${user.firstName} ${user.lastName} (${user.email}): ${error}`
-      );
-    }
+    console.error(error);
   }
 };
 
-// Add sendAnniversaryMessage service here
+export const sendBirthdayMessages = async (
+  user: User,
+  fromRetryJob: boolean
+) => {
+  try {
+    console.log('-----------------------------------------------')
+    console.log(`will send birthday message to ${user.email}`);
+    const birthdayMessage = `Hey, ${user.firstName} ${user.lastName}, it’s your birthday`;
+    await sendMessage(user, birthdayMessage);
+    console.log(`>>>>>>>>>>>>>>>>>SUCCESS SENT Birthday email successfully sent to ${user.email}} at ${new Date()}`);
+    await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        lastBirthdaySent: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error(`Failed to send message to ${user.email}`, error);
 
-export { sendBirthdayMessage };
+    if (!fromRetryJob) {
+      const retryJob = await prisma.retryJob.findFirst({
+        where: {
+          userId: user.id,
+          status: 'pending',
+        },
+      });
+
+      if (!retryJob) {
+        await prisma.retryJob.create({
+          data: {
+            userId: user.id,
+            retryCount: 0,
+            status: 'pending',
+            lastAttempt: new Date(),
+            message: `Failed to send birthday email to ${user.firstName}`,
+          },
+        });
+      }
+    }
+  }
+};

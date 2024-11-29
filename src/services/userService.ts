@@ -1,5 +1,5 @@
 import { User } from '../models/user';
-import { prisma } from '../database';
+import { prisma } from '../utils/prismaClient';
 
 export const createUser = async (data: User) => {
   return await prisma.user.create({ data });
